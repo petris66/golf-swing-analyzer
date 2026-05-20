@@ -7,7 +7,7 @@ const swingStages = [
   "Follow-through"
 ];
 
-const selectedFiles = Array(6).fill(null);
+const selectedImages = Array(6).fill(null);
 const container = document.getElementById("upload-container");
 const analyzeBtn = document.getElementById("analyzeBtn");
 const resultsDiv = document.getElementById("results");
@@ -21,67 +21,37 @@ swingStages.forEach((stage, index) => {
     `;
     container.appendChild(div);
 
-    document.getElementById(`img${index}`).addEventListener("change", e => {
+    document.getElementById(`img${index}`).addEventListener('change', e => {
         const file = e.target.files[0];
-        selectedFiles[index] = file || null;
-
         if(file){
+            selectedImages[index] = file;
             const reader = new FileReader();
             reader.onload = function(ev){
                 document.getElementById(`preview${index}`).src = ev.target.result;
-            };
+            }
             reader.readAsDataURL(file);
         }
-
-        analyzeBtn.disabled = selectedFiles.includes(null);
+        analyzeBtn.disabled = selectedImages.includes(null);
     });
 });
 
-analyzeBtn.addEventListener("click", async () => {
+analyzeBtn.addEventListener('click', () => {
     resultsDiv.innerHTML = "";
-    analyzeBtn.disabled = true;
-
-    try {
-        // Muunna kaikki kuvat base64:ksi
-        const base64Images = await Promise.all(
-            selectedFiles.map(file => fileToBase64(file))
-        );
-
-        // POST request serverless functioniin
-        const response = await fetch("/api/analyze", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ images: base64Images })
-        });
-
-        const data = await response.json();
-
-        if(data.error){
-            resultsDiv.innerHTML = `<p style="color:red;">Virhe: ${data.error}</p>`;
-        } else {
-            const lines = data.analysis.split("\n");
-            lines.forEach((line, i) => {
-                const div = document.createElement("div");
-                div.innerHTML = `<h3>${swingStages[i] || ""}</h3><p>${line}</p>`;
-                resultsDiv.appendChild(div);
-            });
-        }
-
-    } catch(err){
-        resultsDiv.innerHTML = `<p style="color:red;">Virhe: ${err.message}</p>`;
-        console.error(err);
-    }
-
-    analyzeBtn.disabled = false;
+    swingStages.forEach((stage, index) => {
+        const analysis = dummyAnalysis(index);
+        const div = document.createElement("div");
+        div.innerHTML = `<h3>${stage}</h3><p>${analysis}</p>`;
+        resultsDiv.appendChild(div);
+    });
 });
 
-// Funktio File -> base64
-function fileToBase64(file){
-    return new Promise((resolve, reject) => {
-        if(!file) return resolve(null);
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result.split(",")[1]); // vain data
-        reader.onerror = error => reject(error);
-        reader.readAsDataURL(file);
-    });
+function dummyAnalysis(index){
+    switch(index){
+        case 0: return "Tasapainoinen setup. Hieman enemmän vartalon pituutta voisi tuoda Fleetwood-tyyliä.";
+        case 1: return "Takeaway hallittu. Maila voisi liikkua hieman matalammalla ja pidemmälle taakse.";
+        case 2: return "Backswing hyvä, mutta lantio voisi pysyä hieman takana.";
+        case 3: return "Downswing alkaa hyvin. Kädet hieman aktiiviset, pidempi lag auttaisi.";
+        case 4: return "Impact vaihe hallittu. Paino voisi olla hieman enemmän vasemmalla ja takamus taaempana.";
+        case 5: return "Follow-through hyvä, mutta pidempi rotaatio ja kädet korkeammalle voisi lisätä voimaa ja kontrollia.";
+    }
 }
