@@ -1,47 +1,17 @@
 <!DOCTYPE html>
 <html lang="fi">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Golf Swing Analyzer</title>
-
-  <link rel="stylesheet" href="style.css" />
-  <link rel="apple-touch-icon" sizes="180x180" href="icon.png" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Golf Swing Analyzer</title>
+<link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-  <h1>Golf Swing Analyzer</h1>
+<h1>Golf Swing Analyzer</h1>
+<div id="upload-container"></div>
+<button id="analyzeBtn" disabled>Analysoi Swing</button>
+<div id="results"></div>
 
-  <div id="instructions">
-    <h2>Ohjeet</h2>
-    <ol>
-      <li>Ota swingistä video ja tallenna se puhelimeesi.</li>
-      <li>Avaa video esimerkiksi analyze.golf-palvelussa.</li>
-      <li>Hidasta video nopeuteen 0,1x.</li>
-      <li>Pysäytä video kuudessa kohdassa ja ota screenshotit:</li>
-    </ol>
-
-    <ol>
-      <li>Osoiteasento</li>
-      <li>Takahuiskun alku</li>
-      <li>Takahuiskun huippu</li>
-      <li>Downswingin alku</li>
-      <li>Juuri ennen kontaktia</li>
-      <li>Follow-through</li>
-    </ol>
-
-    <p>
-      Lataa nämä 6 kuvaa alle ja paina <strong>Analysoi Swing</strong>.
-      Analyysi vertaa swingiä Tommy Fleetwoodin tekniikkaan.
-    </p>
-  </div>
-
-  <div id="upload-container"></div>
-
-  <button id="analyzeBtn" disabled>Analysoi Swing</button>
-
-  <div id="results"></div>
-
-  <script src="app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
