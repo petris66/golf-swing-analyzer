@@ -35,14 +35,34 @@ swingStages.forEach((stage, index) => {
     });
 });
 
-analyzeBtn.addEventListener('click', () => {
+analyzeBtn.addEventListener('click', async () => {
     resultsDiv.innerHTML = "";
-    swingStages.forEach((stage, index) => {
-        const analysis = dummyAnalysis(index);
-        const div = document.createElement("div");
-        div.innerHTML = `<h3>${stage}</h3><p>${analysis}</p>`;
-        resultsDiv.appendChild(div);
-    });
+
+    // Tässä näet DevToolsin console-logissa, että mitä dataa lähetetään
+    console.log(selectedImages);
+
+    // Muodostetaan base64 array fetchia varten
+    const base64ImagesArray = await Promise.all(selectedImages.map(file => {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = e => resolve(e.target.result);
+            reader.readAsDataURL(file);
+        });
+    }));
+
+    // Lähetetään kuvat backendille
+    try {
+        const response = await fetch("/api/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ images: base64ImagesArray })
+        });
+
+        const data = await response.json();
+        resultsDiv.innerHTML = `<pre>${data.analysis || JSON.stringify(data)}</pre>`;
+    } catch (err) {
+        resultsDiv.innerHTML = `<p style="color:red">Analyysi epäonnistui: ${err}</p>`;
+    }
 });
 
 function dummyAnalysis(index){
