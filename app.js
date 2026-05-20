@@ -36,42 +36,34 @@ swingStages.forEach((stage, index) => {
 });
 
 analyzeBtn.addEventListener('click', async () => {
-    resultsDiv.innerHTML = "";
-
-    // Tässä näet DevToolsin console-logissa, että mitä dataa lähetetään
-    console.log(selectedImages);
-
-    // Muodostetaan base64 array fetchia varten
-    const base64ImagesArray = await Promise.all(selectedImages.map(file => {
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = e => resolve(e.target.result);
-            reader.readAsDataURL(file);
-        });
-    }));
-
-    // Lähetetään kuvat backendille
+    resultsDiv.innerHTML = "<p>Analysoidaan...</p>";
+    
     try {
+        // Muunna kuvat base64-muotoon
+        const base64Images = await Promise.all(selectedImages.map(file => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(",")[1]); // Poistetaan data:image/... osa
+                reader.onerror = () => reject("Kuvan lukeminen epäonnistui");
+                reader.readAsDataURL(file);
+            });
+        }));
+
+        // Lähetä POST-pyyntö omaan APIiin
         const response = await fetch("/api/analyze", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ images: base64ImagesArray })
+            body: JSON.stringify({ images: base64Images })
         });
 
+        if(!response.ok){
+            throw new Error("Analyysi epäonnistui palvelimella");
+        }
+
         const data = await response.json();
-        resultsDiv.innerHTML = `<pre>${data.analysis || JSON.stringify(data)}</pre>`;
+        resultsDiv.innerHTML = `<p>${data.analysis}</p>`;
     } catch (err) {
-        resultsDiv.innerHTML = `<p style="color:red">Analyysi epäonnistui: ${err}</p>`;
+        console.error(err);
+        resultsDiv.innerHTML = `<p style="color:red;">Virhe: ${err.message}</p>`;
     }
 });
-
-function dummyAnalysis(index){
-    switch(index){
-        case 0: return "Tasapainoinen setup. Hieman enemmän vartalon pituutta voisi tuoda Fleetwood-tyyliä.";
-        case 1: return "Takeaway hallittu. Maila voisi liikkua hieman matalammalla ja pidemmälle taakse.";
-        case 2: return "Backswing hyvä, mutta lantio voisi pysyä hieman takana.";
-        case 3: return "Downswing alkaa hyvin. Kädet hieman aktiiviset, pidempi lag auttaisi.";
-        case 4: return "Impact vaihe hallittu. Paino voisi olla hieman enemmän vasemmalla ja takamus taaempana.";
-        case 5: return "Follow-through hyvä, mutta pidempi rotaatio ja kädet korkeammalle voisi lisätä voimaa ja kontrollia.";
-    }
-}
