@@ -280,5 +280,17 @@
       return md.replace(/### (.*)/g,'<h3>$1</h3>').replace(/## (.*)/g,'<h3>$1</h3>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/^\s*[-*] (.*)/gm,'<li>$1</li>').replace(/(<li>[\s\S]*?<\/li>(\s*<li>[\s\S]*?<\/li>)*)/g,'<ul>$1</ul>').replace(/\n{2,}/g,'</p><p>').replace(/^(?!<[hul])(.+)$/gm,m=>m.startsWith('<')?m:`<p>${m}</p>`).replace(/<p><\/p>/g,'');
     }
   </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Golf Swing Analyzer</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1>Golf Swing Analyzer</h1>
+<div id="upload-container"></div>
+<button id="analyzeBtn" disabled>Analysoi Swing</button>
+<div id="results"></div>
+
+<script src="app.js"></script>
 </body>
 </html>
