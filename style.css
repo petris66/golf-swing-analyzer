@@ -1,4 +1,4 @@
-/* style.css */
+/* style.css - mobiiliystävällinen Swing Analyzer */
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -15,11 +15,29 @@ h1 {
     color: #2c3e50;
 }
 
+h2 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
 h3 {
     color: #2980b9;
     margin-bottom: 5px;
 }
 
+/* Ohjeet scrollattavaksi mobiilissa */
+#instructions {
+    background-color: #f0f0f0;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 10px;
+    max-height: 35vh;               /* 35% näytön korkeudesta */
+    overflow-y: auto;               /* pystysuora scrollaus */
+    -webkit-overflow-scrolling: touch; /* smooth scroll iOS:ssä */
+    font-size: 0.95rem;
+}
+
+/* Upload container */
 #upload-container {
     display: flex;
     flex-direction: column;
@@ -68,6 +86,24 @@ div {
     margin-bottom: 10px;
 }
 
+/* Responsiivisuus iPhonelle */
+@media (max-width: 480px) {
+    #instructions {
+        max-height: 40vh;
+        font-size: 0.9rem;
+    }
+
+    h1 {
+        font-size: 1.5rem;
+    }
+
+    button {
+        padding: 10px;
+        font-size: 0.95rem;
+    }
+}
+
+/* Desktop / tabletti */
 @media (min-width: 768px) {
     #upload-container {
         max-width: 600px;
