@@ -1,5 +1,5 @@
 
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="fi">
 <head>
   <meta charset="UTF-8" />
@@ -232,14 +232,33 @@
       uploadCount.textContent=c>0?`${c} / 6 kuvaa valittu`:'';
       analyzeBtn.disabled=c===0;
     }
-    async function toBase64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);});}
+    async function toBase64(file){
+      return new Promise((res,rej)=>{
+        const img=new Image();
+        const url=URL.createObjectURL(file);
+        img.onload=()=>{
+          const canvas=document.createElement('canvas');
+          const max=1024;
+          let w=img.width,h=img.height;
+          if(w>h&&w>max){h=h*max/w;w=max;}
+          else if(h>max){w=w*max/h;h=max;}
+          canvas.width=w;canvas.height=h;
+          canvas.getContext('2d').drawImage(img,0,0,w,h);
+          const data=canvas.toDataURL('image/jpeg',0.7).split(',')[1];
+          URL.revokeObjectURL(url);
+          res(data);
+        };
+        img.onerror=rej;
+        img.src=url;
+      });
+    }
     analyzeBtn.addEventListener('click',async()=>{
       if(!uploadedFiles.length)return;
       errorBox.classList.remove('visible');
       ['upload-card','pro-card','analyze-section','instructions-card'].forEach(id=>document.getElementById(id).style.display='none');
       loadingState.classList.add('visible');result.classList.remove('visible');
       try{
-        const images=await Promise.all(uploadedFiles.map(async f=>({type:'image_url',image_url:{url:`data:${f.type||'image/jpeg'};base64,${await toBase64(f)}`,detail:'high'}})));
+        const images=await Promise.all(uploadedFiles.map(async f=>({type:'image_url',image_url:{url:`data:image/jpeg;base64,${await toBase64(f)}`,detail:'low'}})));
         const proPlayer=proToggle.checked&&proSelect.value?proSelect.value:null;
         const systemPrompt=`Olet huippuluokan golf-valmentaja ja biomekaniikan asiantuntija.\nAnalysoi golf-swing kuvasarjasta (${uploadedFiles.length} kuvaa).\nVastaa aina suomeksi. Ole konkreettinen, tarkka ja rakentava.\n\nRakenna vastauksesi:\n### ✅ Vahvuudet\n### ⚠️ Kehityskohteet\n### 🎯 Prioriteettiharjoitus\n${proPlayer?`### 🏆 Vertailu: ${proPlayer}`:''}\n\nLopussa anna pisteet (0-10) JSON-muodossa:\n\`\`\`json\n{"asento":8,"kierto":7,"paino":6,"follow_through":7}\n\`\`\``;
         const response=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-4o',max_tokens:1200,messages:[{role:'system',content:systemPrompt},{role:'user',content:[...images,{type:'text',text:`Analysoi tämä golf swing ${uploadedFiles.length} kuvan perusteella.${proPlayer?` Vertaa myös ${proPlayer}:n tekniikkaan.`:''} Anna käytännöllisiä neuvoja.`}]}]})});
