@@ -1,0 +1,661 @@
+
+
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Golf Swing Analyzer</title>
+  <link rel="apple-touch-icon" href="icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Golf Analyzer" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    :root{--bg:#dff0d5;--green-deep:#1a3d14;--green-mid:#2d6b23;--green-bright:#3a8a2c;--green-accent:#2e7d1f;--gold:#7a5600;--gold-light:#a07200;--gold-bg:#fff4d0;--text-main:#0d2409;--text-mid:#274d1e;--text-soft:#3d6632;--white:#ffffff;--card-bg:rgba(255,255,255,0.82);--card-border:rgba(26,61,20,0.16);--shadow:rgba(13,36,9,0.13);}
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text-main);min-height:100dvh;overflow-x:hidden;}
+    .bg-texture{position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse at 15% 0%,rgba(58,138,44,0.2) 0%,transparent 50%),radial-gradient(ellipse at 85% 100%,rgba(45,107,35,0.16) 0%,transparent 50%),repeating-linear-gradient(135deg,transparent,transparent 32px,rgba(42,90,34,0.05) 32px,rgba(42,90,34,0.05) 33px);}
+    header{position:relative;z-index:10;padding:56px 24px 30px;background:linear-gradient(180deg,var(--green-deep) 0%,rgba(26,61,20,0) 100%);}
+    .logo-badge{display:inline-flex;align-items:center;gap:6px;background:var(--gold-bg);color:var(--gold);font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:5px 14px;border-radius:20px;margin-bottom:14px;border:1.5px solid rgba(122,86,0,0.22);box-shadow:0 2px 8px rgba(122,86,0,0.15);}
+    h1{font-family:'Playfair Display',serif;font-size:clamp(30px,9vw,40px);font-weight:700;line-height:1.12;color:var(--white);text-shadow:0 2px 14px rgba(0,0,0,0.35);}
+    h1 span{color:#f5d77a;}
+    .subtitle{margin-top:10px;font-size:15px;color:rgba(255,255,255,0.9);}
+    main{position:relative;z-index:10;padding:0 16px 100px;}
+    .card{background:var(--card-bg);border:1.5px solid var(--card-border);border-radius:20px;padding:20px;margin-bottom:16px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 4px 22px var(--shadow);}
+    .card-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--green-accent);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+    .card-title::after{content:'';flex:1;height:1.5px;background:linear-gradient(90deg,rgba(46,125,31,0.3),transparent);}
+    .instructions-toggle{width:100%;background:var(--card-bg);border:1.5px solid var(--card-border);border-radius:20px;padding:16px 20px;margin-bottom:16px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 4px 22px var(--shadow);display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+    .instructions-toggle-label{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--green-accent);}
+    .instructions-arrow{width:22px;height:22px;border-radius:50%;background:rgba(46,125,31,0.12);display:flex;align-items:center;justify-content:center;transition:transform 0.3s;flex-shrink:0;}
+    .instructions-arrow svg{width:12px;height:12px;color:var(--green-accent);}
+    .instructions-arrow.open{transform:rotate(180deg);}
+    .instructions-body{display:none;padding-top:4px;}
+    .instructions-body.open{display:block;}
+    .steps{display:flex;flex-direction:column;}
+    .step{display:flex;align-items:flex-start;gap:14px;padding:12px 0;border-bottom:1px solid rgba(26,61,20,0.09);}
+    .step:last-child{border-bottom:none;}
+    .step-num{min-width:30px;height:30px;border-radius:50%;background:var(--green-mid);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--white);box-shadow:0 2px 8px rgba(45,107,35,0.38);}
+    .step-text{font-size:14px;line-height:1.6;color:var(--text-main);padding-top:4px;}
+    .step-text strong{color:var(--green-deep);font-weight:700;}
+    .phase-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;}
+    .phase-tag{background:rgba(46,125,31,0.11);border:1.5px solid rgba(46,125,31,0.28);border-radius:10px;padding:9px 11px;font-size:13px;font-weight:500;color:var(--green-deep);display:flex;align-items:center;gap:7px;}
+    .phase-tag .dot{width:7px;height:7px;border-radius:50%;background:var(--green-bright);flex-shrink:0;}
+    .tip-box{background:var(--gold-bg);border:1.5px solid rgba(122,86,0,0.22);border-radius:12px;padding:12px 14px;margin-top:14px;font-size:13px;color:var(--gold);line-height:1.55;font-weight:500;}
+    .upload-zone{border:2px dashed rgba(46,125,31,0.45);border-radius:18px;padding:36px 20px;text-align:center;background:rgba(46,125,31,0.07);cursor:pointer;transition:all 0.2s ease;position:relative;overflow:hidden;}
+    .upload-zone:active,.upload-zone.drag-over{border-color:var(--green-bright);background:rgba(46,125,31,0.14);transform:scale(0.99);}
+    .upload-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+    .upload-icon{width:54px;height:54px;margin:0 auto 14px;background:var(--green-mid);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(45,107,35,0.42);}
+    .upload-icon svg{width:26px;height:26px;color:white;}
+    .upload-title{font-family:'Playfair Display',serif;font-size:19px;color:var(--text-main);margin-bottom:6px;font-weight:700;}
+    .upload-sub{font-size:13px;color:var(--text-mid);}
+    .upload-count{margin-top:10px;font-size:13px;color:var(--green-accent);font-weight:700;}
+    .thumb-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px;}
+    .thumb-item{position:relative;border-radius:12px;overflow:hidden;aspect-ratio:3/4;background:rgba(42,90,34,0.1);border:1.5px solid rgba(42,90,34,0.2);}
+    .thumb-item img{width:100%;height:100%;object-fit:cover;}
+    .thumb-label{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(0deg,rgba(13,36,9,0.88) 0%,transparent 100%);padding:8px 5px 5px;font-size:9px;letter-spacing:0.8px;text-transform:uppercase;color:rgba(255,255,255,0.95);text-align:center;font-weight:600;}
+    .thumb-remove{position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;background:rgba(13,36,9,0.75);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:white;font-size:14px;font-weight:700;}
+    .pro-toggle{display:flex;align-items:center;justify-content:space-between;padding:14px 0;}
+    .pro-toggle-label{font-size:15px;color:var(--text-main);font-weight:600;}
+    .pro-toggle-sub{font-size:12px;color:var(--text-soft);margin-top:3px;}
+    .toggle-switch{position:relative;width:50px;height:30px;flex-shrink:0;}
+    .toggle-switch input{opacity:0;width:0;height:0;}
+    .toggle-slider{position:absolute;inset:0;border-radius:30px;background:rgba(42,90,34,0.18);cursor:pointer;transition:0.3s;border:1.5px solid rgba(42,90,34,0.2);}
+    .toggle-slider::before{content:'';position:absolute;width:22px;height:22px;border-radius:50%;background:var(--white);top:3px;left:3px;transition:0.3s;box-shadow:0 2px 6px rgba(0,0,0,0.2);}
+    input:checked+.toggle-slider{background:var(--green-mid);border-color:var(--green-mid);}
+    input:checked+.toggle-slider::before{transform:translateX(20px);}
+    .pro-select{margin-top:12px;background:rgba(255,255,255,0.9);border:1.5px solid rgba(42,90,34,0.28);border-radius:12px;padding:13px 16px;color:var(--text-main);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;width:100%;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%232d6b23' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;background-size:13px;display:none;}
+    .pro-select.visible{display:block;}
+    .gender-btn{flex:1;padding:10px;border-radius:12px;border:1.5px solid rgba(42,90,34,0.28);background:rgba(255,255,255,0.9);color:var(--text-main);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;}
+    .gender-btn.active{background:var(--green-mid);color:white;border-color:var(--green-mid);}
+    .btn-analyze{width:100%;padding:19px;background:linear-gradient(135deg,var(--green-bright) 0%,var(--green-deep) 100%);border:none;border-radius:16px;color:white;font-family:'DM Sans',sans-serif;font-size:17px;font-weight:700;cursor:pointer;position:relative;overflow:hidden;box-shadow:0 6px 24px rgba(45,107,35,0.48),0 1px 0 rgba(255,255,255,0.15) inset;transition:transform 0.15s,box-shadow 0.15s;display:flex;align-items:center;justify-content:center;gap:10px;}
+    .btn-analyze:active{transform:scale(0.98);}
+    .btn-analyze:disabled{background:rgba(42,90,34,0.18);box-shadow:none;color:rgba(42,90,34,0.42);cursor:not-allowed;}
+    .btn-analyze svg{width:20px;height:20px;}
+    .btn-shimmer{position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);animation:shimmer 2.5s infinite;}
+    @keyframes shimmer{to{left:160%;}}
+    .loading-state{text-align:center;padding:52px 20px;display:none;}
+    .loading-state.visible{display:block;}
+    .fairway-loader{width:64px;height:64px;margin:0 auto 24px;position:relative;}
+    .fairway-loader::before,.fairway-loader::after{content:'';position:absolute;border-radius:50%;border:3px solid transparent;}
+    .fairway-loader::before{inset:0;border-top-color:var(--green-mid);animation:spin 1s linear infinite;}
+    .fairway-loader::after{inset:9px;border-top-color:var(--gold-light);animation:spin 0.7s linear infinite reverse;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .loading-text{font-family:'Playfair Display',serif;font-size:20px;color:var(--text-main);margin-bottom:8px;font-weight:700;}
+    .loading-sub{font-size:14px;color:var(--text-mid);}
+    #videoScrubber::-webkit-slider-thumb{width:20px;height:20px;border-radius:50%;background:var(--green-mid);cursor:pointer;}
+    #result{display:none;}
+    #result.visible{display:block;}
+    .result-body{font-size:15px;line-height:1.78;color:var(--text-main);}
+    .result-body h3{font-family:'Playfair Display',serif;font-size:17px;color:var(--green-deep);margin:20px 0 10px;font-weight:700;}
+    .result-body ul{padding-left:18px;}
+    .result-body li{margin-bottom:8px;}
+    .result-body strong{color:var(--green-deep);font-weight:700;}
+    .result-body p{margin-bottom:8px;}
+    .result-section{background:rgba(255,255,255,0.65);border:1.5px solid rgba(26,61,20,0.14);border-radius:14px;padding:16px;margin-bottom:12px;}
+    .section-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--green-accent);margin-bottom:12px;font-weight:700;}
+    .score-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+    .score-name{font-size:14px;color:var(--text-main);min-width:115px;font-weight:500;}
+    .score-bar-bg{flex:1;height:9px;border-radius:9px;background:rgba(42,90,34,0.13);overflow:hidden;}
+    .score-bar-fill{height:100%;border-radius:9px;background:linear-gradient(90deg,var(--green-bright),var(--green-deep));transition:width 1s cubic-bezier(0.4,0,0.2,1);}
+    .score-val{font-size:14px;color:var(--green-deep);font-weight:700;min-width:36px;text-align:right;}
+    .btn-pdf{width:100%;padding:15px;background:linear-gradient(135deg,var(--gold-light) 0%,var(--gold) 100%);border:none;border-radius:14px;color:white;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;margin-top:12px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(122,86,0,0.3);}
+    .btn-copy{width:100%;padding:15px;background:rgba(42,90,34,0.1);border:1.5px solid rgba(42,90,34,0.22);border-radius:14px;color:var(--green-deep);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;margin-top:12px;display:flex;align-items:center;justify-content:center;gap:8px;}
+    .btn-reset{width:100%;padding:15px;background:rgba(42,90,34,0.1);border:1.5px solid rgba(42,90,34,0.22);border-radius:14px;color:var(--green-deep);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;margin-top:12px;transition:background 0.2s;}
+    .safe-bottom{height:env(safe-area-inset-bottom,16px);}
+    .error-box{background:#fff0f0;border:1.5px solid #f5c0c0;border-radius:12px;padding:14px 16px;margin-top:12px;font-size:14px;color:#8b0000;line-height:1.55;display:none;}
+    .error-box.visible{display:block;}
+    .pin-screen{position:fixed;inset:0;z-index:9999;background:linear-gradient(160deg,var(--green-deep) 0%,#0d2409 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;}
+    .pin-logo{font-size:56px;margin-bottom:16px;}
+    .pin-title{font-family:'Playfair Display',serif;font-size:26px;color:var(--white);font-weight:700;margin-bottom:6px;text-align:center;}
+    .pin-sub{font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:40px;text-align:center;}
+    .pin-dots{display:flex;gap:14px;margin-bottom:36px;}
+    .pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,0.4);background:transparent;transition:all 0.15s;}
+    .pin-dot.filled{background:var(--white);border-color:var(--white);}
+    .pin-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%;max-width:280px;}
+    .pin-key{background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.15);border-radius:16px;padding:18px;font-size:22px;font-weight:700;color:var(--white);cursor:pointer;text-align:center;transition:background 0.15s;font-family:'DM Sans',sans-serif;}
+    .pin-key:active{background:rgba(255,255,255,0.25);}
+    .pin-error{color:#ff6b6b;font-size:14px;margin-top:16px;height:20px;text-align:center;}
+    .pin-screen.hidden{display:none;}
+    .modal-overlay{display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.92);align-items:center;justify-content:center;padding:16px;}
+  </style>
+</head>
+<body>
+
+  <!-- PIN Screen -->
+  <div class="pin-screen" id="pinScreen">
+    <div class="pin-logo">⛳</div>
+    <div class="pin-title">Golf Swing Analyzer</div>
+    <div class="pin-sub">Anna PIN-koodi jatkaaksesi</div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:-30px;margin-bottom:30px;letter-spacing:1px;">by Petri Suokas · Powered by AI</div>
+    <div class="pin-dots" id="pinDots">
+      <div class="pin-dot" id="dot0"></div>
+      <div class="pin-dot" id="dot1"></div>
+      <div class="pin-dot" id="dot2"></div>
+      <div class="pin-dot" id="dot3"></div>
+      <div class="pin-dot" id="dot4"></div>
+      <div class="pin-dot" id="dot5"></div>
+    </div>
+    <div class="pin-keypad">
+      <button class="pin-key" onclick="pinPress('1')">1</button>
+      <button class="pin-key" onclick="pinPress('2')">2</button>
+      <button class="pin-key" onclick="pinPress('3')">3</button>
+      <button class="pin-key" onclick="pinPress('4')">4</button>
+      <button class="pin-key" onclick="pinPress('5')">5</button>
+      <button class="pin-key" onclick="pinPress('6')">6</button>
+      <button class="pin-key" onclick="pinPress('7')">7</button>
+      <button class="pin-key" onclick="pinPress('8')">8</button>
+      <button class="pin-key" onclick="pinPress('9')">9</button>
+      <button class="pin-key" onclick="pinPress('')"></button>
+      <button class="pin-key" onclick="pinPress('0')">0</button>
+      <button class="pin-key" onclick="pinDel()">&#x232B;</button>
+    </div>
+    <div class="pin-error" id="pinError"></div>
+  </div>
+
+  <!-- Fullscreen image modal -->
+  <div class="modal-overlay" id="imgModal" onclick="this.style.display='none'">
+    <div style="width:100%;max-width:700px;">
+      <div style="text-align:right;margin-bottom:8px;"><span style="color:rgba(255,255,255,0.6);font-size:13px;">&#x2715; Sulje napauttamalla</span></div>
+      <img src="kuvauskulmat.png" alt="Kuvauskulmat" style="width:100%;border-radius:12px;display:block;" />
+    </div>
+  </div>
+
+  <div class="bg-texture" aria-hidden="true"></div>
+  <header>
+    <div class="logo-badge">&#x26F3; Pro Analysis</div>
+    <h1>Golf Swing<br><span>Analyzer</span></h1>
+    <p class="subtitle">Lataa video swingistasi — tekoaly analysoi tekniikkasi</p>
+    <p style="margin-top:8px;font-size:13px;color:rgba(255,255,255,0.5);font-weight:500;letter-spacing:1px;">by Petri Suokas · Powered by AI</p>
+  </header>
+
+  <main>
+    <!-- Pelaajan nimi -->
+    <div class="card" id="name-card">
+      <div class="card-title">Pelaajan tiedot</div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--green-accent);margin-bottom:8px;text-transform:uppercase;">Pelaajan nimi</div>
+      <input type="text" id="playerName" placeholder="esim. Matti Meikalainen" autocomplete="off"
+        style="width:100%;padding:13px 16px;border-radius:12px;border:1.5px solid rgba(42,90,34,0.28);background:rgba(255,255,255,0.9);font-family:'DM Sans',sans-serif;font-size:15px;color:var(--text-main);outline:none;"
+        onfocus="this.style.borderColor='var(--green-mid)'" onblur="this.style.borderColor='rgba(42,90,34,0.28)'" />
+    </div>
+
+    <!-- Ohjeet -->
+    <button class="instructions-toggle" id="instructionsToggle" aria-expanded="false">
+      <span class="instructions-toggle-label">&#x1F4CB; Ohjeet</span>
+      <span class="instructions-arrow" id="instructionsArrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </button>
+    <div class="instructions-body" id="instructionsBody">
+      <div class="card" style="margin-top:-8px;">
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-text">Kuvaa swing videoksi — suositus <strong>1080p 60fps</strong>. iPhone: Asetukset &#x2192; Kamera &#x2192; Videokuvaus.</div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-text">Lataa video sovellukseen ja <strong>kaappaa 6 vaihetta</strong> liu'uttamalla aikajanaa oikeisiin kohtiin:</div>
+          </div>
+        </div>
+        <div class="phase-grid">
+          <div class="phase-tag"><div class="dot"></div>Lahtöasento</div>
+          <div class="phase-tag"><div class="dot"></div>Backswing puoliväli</div>
+          <div class="phase-tag"><div class="dot"></div>Backswing huippu</div>
+          <div class="phase-tag"><div class="dot"></div>P6 — kädet vyötärön tasolla</div>
+          <div class="phase-tag"><div class="dot"></div>Osumahetki</div>
+          <div class="phase-tag"><div class="dot"></div>Saatto osuman jälkeen</div>
+        </div>
+        <div class="tip-box">&#x1F4A1; <strong>Vinkki:</strong> Kuvaa FO- ja DTL-kulmat erikseen ja tee molemmista oma analyysi. Käytä <strong>-5/+5</strong> nappeja tarkan hetken löytämiseen.</div>
+        <div style="margin-top:16px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--green-accent);margin-bottom:8px;">&#x1F4F7; Kuvauskulmat</div>
+          <img src="kuvauskulmat.png" alt="FO ja DTL kuvauskulmat" style="width:100%;border-radius:12px;display:block;cursor:pointer;" onclick="document.getElementById('imgModal').style.display='flex'" />
+          <div style="font-size:11px;color:var(--text-soft);margin-top:6px;text-align:center;">&#x1F446; Napauta suurentaaksesi</div>
+          <div style="background:var(--gold-bg);border:1.5px solid rgba(122,86,0,0.22);border-radius:10px;padding:10px 14px;margin-top:10px;font-size:12px;color:var(--gold);line-height:1.6;">
+            &#x1F4A1; <strong>Vinkki:</strong> Tee <strong>kaksi erillistä analyysiä</strong> — ensimmäinen FO-kuvakulmalla ja toinen DTL-kuvakulmalla!
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lataa video/kuvat -->
+    <div class="card" id="upload-card">
+      <div class="card-title" id="uploadCardTitle">Lataa video</div>
+      <!-- Video upload (default) -->
+      <div id="videoUploadSection">
+        <div id="videoStep1">
+          <div class="upload-zone" id="videoUploadZone" style="position:relative;">
+            <input type="file" id="videoInput" accept="video/*" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;" />
+            <div class="upload-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+              </svg>
+            </div>
+            <div class="upload-title">Lataa swing-video</div>
+            <div class="upload-sub">Valitse video → etsi varsinainen peliswing → kaappaa 6 vaihetta</div>
+            <div class="upload-count" id="videoStatus"></div>
+          </div>
+        </div>
+        <div id="videoStep2" style="display:none;">
+          <div style="margin-bottom:12px;">
+            <div style="font-size:13px;font-weight:600;color:var(--text-main);margin-bottom:4px;" id="frameInstructions">Valitse <strong>Lahtöasento</strong> (1/6)</div>
+          </div>
+          <div style="position:relative;border-radius:14px;overflow:hidden;background:#000;margin-bottom:10px;">
+            <video id="videoPlayer" style="width:100%;display:block;max-height:260px;object-fit:contain;" playsinline muted></video>
+            <div style="position:absolute;top:8px;left:8px;background:var(--green-mid);color:white;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;" id="overlayLabel">1/6</div>
+          </div>
+          <div style="margin-bottom:10px;">
+            <input type="range" id="videoScrubber" min="0" max="1000" value="0" style="width:100%;height:6px;border-radius:6px;accent-color:var(--green-mid);cursor:pointer;" />
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-soft);margin-top:4px;">
+              <span id="videoCurrentTime">0.00s</span><span id="videoDuration">0.00s</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:14px;">
+            <button onclick="videoStepFrame(-1)" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid rgba(42,90,34,0.28);background:rgba(255,255,255,0.9);font-size:18px;cursor:pointer;">&#x23EE;</button>
+            <button onclick="videoStepFrame(-5)" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid rgba(42,90,34,0.28);background:rgba(255,255,255,0.9);font-size:13px;font-weight:700;cursor:pointer;">-5</button>
+            <button onclick="toggleVideoPlay()" id="playPauseBtn" style="flex:2;padding:10px;border-radius:10px;border:none;background:var(--green-mid);color:white;font-size:15px;font-weight:700;cursor:pointer;">&#x25B6; Toista</button>
+            <button onclick="videoStepFrame(5)" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid rgba(42,90,34,0.28);background:rgba(255,255,255,0.9);font-size:13px;font-weight:700;cursor:pointer;">+5</button>
+            <button onclick="videoStepFrame(1)" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid rgba(42,90,34,0.28);background:rgba(255,255,255,0.9);font-size:18px;cursor:pointer;">&#x23ED;</button>
+          </div>
+          <button onclick="captureCurrentFrame()" id="captureBtn" style="width:100%;padding:16px;background:linear-gradient(135deg,var(--green-bright),var(--green-deep));border:none;border-radius:14px;color:white;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:12px;">
+            &#x1F4F8; Kaappaa — <span id="capturePhaseName">Lahtöasento</span>
+          </button>
+          <div id="videoThumbGrid" class="thumb-grid"></div>
+          <button id="undoBtn" onclick="undoLastCapture()" style="display:none;width:100%;padding:11px;background:rgba(122,86,0,0.1);border:1.5px solid rgba(122,86,0,0.25);border-radius:12px;color:var(--gold);font-size:13px;font-weight:600;cursor:pointer;margin-top:8px;">&#x21A9; Peru viimeisin kuva</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pro-vertailu -->
+    <div class="card" id="pro-card">
+      <div class="card-title">Pro-vertailu</div>
+      <div class="pro-toggle">
+        <div>
+          <div class="pro-toggle-label">Vertaa pro-pelaajaan</div>
+          <div class="pro-toggle-sub">AI analysoi verraten valittuun pelaajaan</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="proToggle" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div id="proOptions" style="display:none;">
+        <div style="display:flex;gap:10px;margin-bottom:12px;">
+          <button class="gender-btn active" id="btnMen" onclick="setGender('men')">&#x1F3CC;&#xFE0F; Miehet</button>
+          <button class="gender-btn" id="btnWomen" onclick="setGender('women')">&#x1F3CC;&#xFE0F;&#x200D;&#x2640;&#xFE0F; Naiset</button>
+        </div>
+        <select class="pro-select visible" id="proSelect">
+          <option value="">Valitse pelaaja…</option>
+          <option value="Tommy Fleetwood">Tommy Fleetwood</option>
+          <option value="Rory McIlroy">Rory McIlroy</option>
+          <option value="Jon Rahm">Jon Rahm</option>
+          <option value="Tiger Woods">Tiger Woods</option>
+          <option value="Scottie Scheffler">Scottie Scheffler</option>
+          <option value="Viktor Hovland">Viktor Hovland</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- PRGR -->
+    <div class="card" id="prgr-card">
+      <div class="card-title">PRGR-mittaustulokset</div>
+      <div class="pro-toggle">
+        <div>
+          <div class="pro-toggle-label">Lisää PRGR-lukemat</div>
+          <div class="pro-toggle-sub">Tarkentaa analyysiä mittaustuloksilla</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="prgrToggle" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div id="prgrFields" style="display:none;margin-top:12px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+          <div>
+            <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--green-accent);margin-bottom:6px;text-transform:uppercase;">Kuva 1: Carry-naytto</div>
+            <div style="font-size:11px;color:var(--text-soft);margin-bottom:8px;">Club Speed · Ball Speed · Smash · Carry</div>
+            <label style="display:block;border:2px dashed rgba(46,125,31,0.4);border-radius:12px;padding:14px;text-align:center;cursor:pointer;background:rgba(46,125,31,0.05);">
+              <input type="file" id="prgrImg1" accept="image/*" style="display:none;" />
+              <div id="prgrImg1Preview" style="font-size:13px;color:var(--text-soft);">&#x1F4F7; Lataa kuva</div>
+            </label>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--green-accent);margin-bottom:6px;text-transform:uppercase;">Kuva 2: Total-naytto</div>
+            <div style="font-size:11px;color:var(--text-soft);margin-bottom:8px;">Club Speed · Ball Speed · Smash · Total</div>
+            <label style="display:block;border:2px dashed rgba(46,125,31,0.4);border-radius:12px;padding:14px;text-align:center;cursor:pointer;background:rgba(46,125,31,0.05);">
+              <input type="file" id="prgrImg2" accept="image/*" style="display:none;" />
+              <div id="prgrImg2Preview" style="font-size:13px;color:var(--text-soft);">&#x1F4F7; Lataa kuva</div>
+            </label>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--text-soft);">&#x1F4A1; AI lukee luvut automaattisesti kuvista.</div>
+      </div>
+    </div>
+
+    <!-- Analysoi -->
+    <div id="analyze-section">
+      <button class="btn-analyze" id="analyzeBtn" disabled>
+        <div class="btn-shimmer"></div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        Analysoi Swing
+      </button>
+      <div class="error-box" id="errorBox"></div>
+    </div>
+
+    <div class="loading-state" id="loadingState">
+      <div class="fairway-loader"></div>
+      <div class="loading-text">Analysoidaan…</div>
+      <div class="loading-sub">Tekoaly tutkii swing-tekniikkaasi</div>
+    </div>
+
+    <!-- Tulos -->
+    <div id="result">
+      <div style="background:linear-gradient(135deg,var(--green-deep) 0%,var(--green-mid) 100%);border-radius:20px 20px 0 0;padding:24px 20px 20px;">
+        <div style="display:inline-flex;align-items:center;gap:6px;background:var(--gold-bg);color:var(--gold);font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:4px 12px;border-radius:20px;margin-bottom:10px;">&#x26F3; Pro Analysis</div>
+        <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:white;line-height:1.2;">Analyysi valmis</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.75);margin-top:4px;" id="resultSub">Golf Swing Pro Analysis</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:4px;letter-spacing:1px;">by Petri Suokas · Powered by AI</div>
+      </div>
+      <div style="background:var(--card-bg);border:1.5px solid var(--card-border);border-radius:0 0 20px 20px;padding:20px;backdrop-filter:blur(16px);box-shadow:0 4px 22px var(--shadow);">
+        <div id="scoreSection" class="result-section" style="display:none;">
+          <div class="section-label">Pisteet</div>
+          <div id="scoreBars"></div>
+        </div>
+        <div class="result-section">
+          <div class="section-label">Analyysi</div>
+          <div class="result-body" id="resultBody"></div>
+        </div>
+        <button class="btn-pdf" id="pdfBtn">&#x1F4C4; Lataa PDF</button>
+        <button class="btn-copy" id="copyBtn">&#x1F4CB; Kopioi analyysi</button>
+        <button class="btn-reset" id="resetBtn">&#x21A9; Uusi analyysi</button>
+      </div>
+    </div>
+    <div class="safe-bottom"></div>
+  </main>
+
+  <script>
+    // PIN
+    const PIN='477638';
+    let pinEntry='';
+    function pinPress(n){
+      if(!n)return;
+      if(pinEntry.length>=6)return;
+      pinEntry+=n;
+      document.getElementById('dot'+(pinEntry.length-1)).classList.add('filled');
+      if(pinEntry.length===6){
+        if(pinEntry===PIN){
+          document.getElementById('pinScreen').classList.add('hidden');
+          sessionStorage.setItem('pin_ok','1');
+        }else{
+          document.getElementById('pinError').textContent='Vaara PIN-koodi';
+          setTimeout(()=>{pinEntry='';document.querySelectorAll('.pin-dot').forEach(d=>d.classList.remove('filled'));document.getElementById('pinError').textContent='';},1000);
+        }
+      }
+    }
+    function pinDel(){
+      if(!pinEntry.length)return;
+      document.getElementById('dot'+(pinEntry.length-1)).classList.remove('filled');
+      pinEntry=pinEntry.slice(0,-1);
+    }
+    if(sessionStorage.getItem('pin_ok')==='1'){document.getElementById('pinScreen').classList.add('hidden');}
+
+    // App
+    const PHASES=['alkuasento','maila vaakatasossa','Backswing huippu','Downswing-kädet vyötärön tasolla','Osuma','Saatto '];
+    let uploadedFiles=[];
+    const analyzeBtn=document.getElementById('analyzeBtn'),loadingState=document.getElementById('loadingState'),result=document.getElementById('result'),resultBody=document.getElementById('resultBody'),resultSub=document.getElementById('resultSub'),resetBtn=document.getElementById('resetBtn'),proToggle=document.getElementById('proToggle'),proSelect=document.getElementById('proSelect'),scoreSection=document.getElementById('scoreSection'),scoreBars=document.getElementById('scoreBars'),errorBox=document.getElementById('errorBox');
+
+    // Init video mode
+    document.getElementById('videoUploadSection').style.display='block';
+    document.getElementById('uploadCardTitle').textContent='Lataa video';
+
+    // Instructions toggle
+    document.getElementById('instructionsToggle').addEventListener('click',()=>{
+      const body=document.getElementById('instructionsBody'),arrow=document.getElementById('instructionsArrow');
+      const open=body.classList.toggle('open');
+      arrow.classList.toggle('open',open);
+    });
+
+    // Palauta videon lataus alkuasetuksiin
+    function resetVideoInput(){
+      document.getElementById('uploadCardTitle').textContent='Lataa video';
+      document.getElementById('videoUploadSection').style.display='block';
+      uploadedFiles=[];
+      const videoThumbGrid=document.getElementById('videoThumbGrid');
+      if(videoThumbGrid) videoThumbGrid.innerHTML='';
+      const videoStatus=document.getElementById('videoStatus');
+      if(videoStatus) videoStatus.textContent='';
+      document.getElementById('videoStep1').style.display='block';
+      document.getElementById('videoStep2').style.display='none';
+      currentPhaseIndex=0;
+      analyzeBtn.disabled=true;
+    }
+
+    // Pro toggle
+    proToggle.addEventListener('change',()=>{
+      document.getElementById('proOptions').style.display=proToggle.checked?'block':'none';
+      if(!proToggle.checked)proSelect.value='';
+    });
+
+    const menPlayers=['Tommy Fleetwood','Rory McIlroy','Jon Rahm','Tiger Woods','Scottie Scheffler','Viktor Hovland'];
+    const womenPlayers=['Nelly Korda','Lydia Ko','Celine Boutier','Anna Nordqvist','Linn Grant'];
+    function setGender(g){
+      document.getElementById('btnMen').classList.toggle('active',g==='men');
+      document.getElementById('btnWomen').classList.toggle('active',g==='women');
+      const players=g==='men'?menPlayers:womenPlayers;
+      proSelect.innerHTML='<option value="">Valitse pelaaja…</option>'+players.map(p=>`<option value="${p}">${p}</option>`).join('');
+    }
+
+    // PRGR
+    document.getElementById('prgrToggle').addEventListener('change',()=>{
+      document.getElementById('prgrFields').style.display=document.getElementById('prgrToggle').checked?'block':'none';
+    });
+    document.getElementById('prgrImg1').addEventListener('change',function(){
+      if(this.files[0]){const img=document.createElement('img');img.src=URL.createObjectURL(this.files[0]);img.style.cssText='width:100%;border-radius:8px;max-height:80px;object-fit:cover;';const p=document.getElementById('prgrImg1Preview');p.innerHTML='';p.appendChild(img);}
+    });
+    document.getElementById('prgrImg2').addEventListener('change',function(){
+      if(this.files[0]){const img=document.createElement('img');img.src=URL.createObjectURL(this.files[0]);img.style.cssText='width:100%;border-radius:8px;max-height:80px;object-fit:cover;';const p=document.getElementById('prgrImg2Preview');p.innerHTML='';p.appendChild(img);}
+    });
+    async function getPrgrImages(){
+      if(!document.getElementById('prgrToggle').checked)return[];
+      const imgs=[];
+      const img1=document.getElementById('prgrImg1').files[0];
+      const img2=document.getElementById('prgrImg2').files[0];
+      if(img1)imgs.push({type:'image_url',image_url:{url:`data:${img1.type};base64,${await toBase64(img1)}`,detail:'high'}});
+      if(img2)imgs.push({type:'image_url',image_url:{url:`data:${img2.type};base64,${await toBase64(img2)}`,detail:'high'}});
+      return imgs;
+    }
+    function getPrgrData(){
+      if(!document.getElementById('prgrToggle').checked)return null;
+      const img1=document.getElementById('prgrImg1').files[0];
+      const img2=document.getElementById('prgrImg2').files[0];
+      return(img1||img2)?'PRGR_IMAGES':null;
+    }
+
+    async function toBase64(file){
+      return new Promise((res,rej)=>{
+        const img=new Image(),url=URL.createObjectURL(file);
+        img.onload=()=>{
+          const canvas=document.createElement('canvas'),max=1024;
+          let w=img.width,h=img.height;
+          if(w>h&&w>max){h=h*max/w;w=max;}else if(h>max){w=w*max/h;h=max;}
+          canvas.width=w;canvas.height=h;
+          canvas.getContext('2d').drawImage(img,0,0,w,h);
+          URL.revokeObjectURL(url);
+          res(canvas.toDataURL('image/jpeg',0.7).split(',')[1]);
+        };
+        img.onerror=rej;img.src=url;
+      });
+    }
+
+    // Video
+    let currentPhaseIndex=0,videoFPS=30,videoDurationVal=0;
+    document.getElementById('videoInput').addEventListener('change',function(){
+      const file=this.files[0];if(!file)return;
+      const player=document.getElementById('videoPlayer');
+      player.src=URL.createObjectURL(file);
+      player.onloadedmetadata=()=>{
+        videoDurationVal=player.duration;
+        document.getElementById('videoDuration').textContent=videoDurationVal.toFixed(2)+'s';
+        document.getElementById('videoStep1').style.display='none';
+        document.getElementById('videoStep2').style.display='block';
+        currentPhaseIndex=0;uploadedFiles=[];
+        document.getElementById('videoThumbGrid').innerHTML='';
+        document.getElementById('undoBtn').style.display='none';
+        updatePhaseUI();
+      };
+      player.load();
+    });
+    document.getElementById('videoScrubber').addEventListener('input',function(){
+      const player=document.getElementById('videoPlayer');
+      player.currentTime=(this.value/1000)*videoDurationVal;
+      document.getElementById('videoCurrentTime').textContent=player.currentTime.toFixed(2)+'s';
+    });
+    document.getElementById('videoPlayer').addEventListener('timeupdate',function(){
+      if(videoDurationVal>0){document.getElementById('videoScrubber').value=(this.currentTime/videoDurationVal)*1000;document.getElementById('videoCurrentTime').textContent=this.currentTime.toFixed(2)+'s';}
+    });
+    function toggleVideoPlay(){const player=document.getElementById('videoPlayer'),btn=document.getElementById('playPauseBtn');if(player.paused){player.play();btn.textContent='⏸ Pysäytä';}else{player.pause();btn.textContent='▶ Toista';}}
+    function videoStepFrame(frames){const player=document.getElementById('videoPlayer');player.pause();document.getElementById('playPauseBtn').textContent='▶ Toista';player.currentTime=Math.max(0,Math.min(videoDurationVal,player.currentTime+frames*(1/videoFPS)));}
+    function updatePhaseUI(){
+      const phase=PHASES[currentPhaseIndex];
+      document.getElementById('frameInstructions').innerHTML=`Valitse <strong>${phase}</strong> (${currentPhaseIndex+1}/6)`;
+      document.getElementById('capturePhaseName').textContent=phase;
+      document.getElementById('overlayLabel').textContent=`${currentPhaseIndex+1}/6`;
+      analyzeBtn.disabled=uploadedFiles.length<6;
+    }
+    function captureCurrentFrame(){
+      if(currentPhaseIndex>=6)return;
+      const player=document.getElementById('videoPlayer');player.pause();
+      document.getElementById('playPauseBtn').textContent='▶ Toista';
+      const canvas=document.createElement('canvas'),max=1024;
+      let w=player.videoWidth,h=player.videoHeight;
+      if(w>h&&w>max){h=h*max/w;w=max;}else if(h>max){w=w*max/h;h=max;}
+      canvas.width=w;canvas.height=h;
+      canvas.getContext('2d').drawImage(player,0,0,w,h);
+      canvas.toBlob(blob=>{
+        const file=new File([blob],`phase_${currentPhaseIndex}.jpg`,{type:'image/jpeg'});
+        uploadedFiles.push(file);
+        const url=URL.createObjectURL(file),grid=document.getElementById('videoThumbGrid'),item=document.createElement('div');
+        item.className='thumb-item';
+        item.innerHTML=`<img src="${url}" alt="${PHASES[currentPhaseIndex]}"/><div class="thumb-label">${PHASES[currentPhaseIndex]}</div>`;
+        grid.appendChild(item);
+        currentPhaseIndex++;
+        document.getElementById('undoBtn').style.display='block';
+        if(currentPhaseIndex>=6){
+          document.getElementById('frameInstructions').innerHTML='&#x2705; Kaikki 6 vaihetta kaapattu!';
+          document.getElementById('captureBtn').disabled=true;
+          document.getElementById('captureBtn').style.background='rgba(42,90,34,0.2)';
+          analyzeBtn.disabled=false;
+        }else{updatePhaseUI();}
+      },'image/jpeg',0.85);
+    }
+    function undoLastCapture(){
+      if(!uploadedFiles.length)return;
+      uploadedFiles.pop();currentPhaseIndex=Math.max(0,currentPhaseIndex-1);
+      const grid=document.getElementById('videoThumbGrid');if(grid.lastChild)grid.removeChild(grid.lastChild);
+      document.getElementById('captureBtn').disabled=false;document.getElementById('captureBtn').style.background='';
+      if(!uploadedFiles.length)document.getElementById('undoBtn').style.display='none';
+      updatePhaseUI();analyzeBtn.disabled=true;
+    }
+
+    // Analyze
+    analyzeBtn.addEventListener('click',async()=>{
+      if(!uploadedFiles.length)return;
+      errorBox.classList.remove('visible');
+      ['upload-card','pro-card','prgr-card','analyze-section','name-card'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+      document.getElementById('instructionsToggle').style.display='none';
+      document.getElementById('instructionsBody').style.display='none';
+      loadingState.classList.add('visible');result.classList.remove('visible');
+      try{
+        const images=await Promise.all(uploadedFiles.map(async f=>({type:'image_url',image_url:{url:`data:image/jpeg;base64,${await toBase64(f)}`,detail:'low'}})));
+        const prgrImages=await getPrgrImages();
+        const prgrData=getPrgrData();
+        const proPlayer=proToggle.checked&&proSelect.value?proSelect.value:null;
+        const playerName=document.getElementById('playerName').value.trim()||'Pelaaja';
+        const systemPrompt=`Olet huippuluokan golf-valmentaja ja biomekaniikan asiantuntija.\nAnalysoi golf-swing kuvasarjasta (${uploadedFiles.length} kuvaa).\nPelaajan nimi: ${playerName}. Viitaa pelaajaan nimella.\nVastaa aina suomeksi. Ole konkreettinen, tarkka ja rakentava.\n\nRakenna vastauksesi:\n### \u2705 Vahvuudet\n### \u26a0\ufe0f Kehityskohteet\n### \ud83c\udfaf Prioriteettiharjoitus\n${proPlayer?`### \ud83c\udfc6 Vertailu: ${proPlayer}`:''}\n${prgrData?`### \ud83d\udcca PRGR-mittaustulokset\nLiitteena on PRGR-analysaattorin nayttokuvat. Lue luvut kuvista ja kommentoi miten ne korreloivat swing-tekniikan kanssa.`:''}\n\nLopussa anna pisteet (0-10) ILMAN otsikkoa ennen JSONia:\n\`\`\`json\n{"asento":8,"kierto":7,"paino":6,"follow_through":7}\n\`\`\``;
+        const response=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-4o',max_tokens:1200,messages:[{role:'system',content:systemPrompt},{role:'user',content:[...images,...prgrImages,{type:'text',text:`Analysoi tama golf swing ${uploadedFiles.length} kuvan perusteella.${proPlayer?` Vertaa myos ${proPlayer}:n tekniikkaan.`:''}${prgrImages.length>0?' Liitteena on myos PRGR-nayttokuvat.':''} Anna kaytannollisia neuvoja.`}]}]})});
+        if(!response.ok){const err=await response.json().catch(()=>({}));throw new Error(err?.error?.message||`HTTP ${response.status}`);}
+        const data=await response.json();
+        const text=data.choices?.[0]?.message?.content||'Analyysi epaonnistui.';
+        const jsonMatch=text.match(/```json\s*([\s\S]*?)```/);
+        let scores=null;
+        const cleanText=text.replace(/```json[\s\S]*?```/g,'').replace(/#+\s*(Kokonaisarvio|Pisteet|Scores?)[^\n]*/gi,'').replace(/^(Kokonaisarvio|Pisteet)[^\n]*/gm,'').trim();
+        if(jsonMatch){try{scores=JSON.parse(jsonMatch[1]);}catch(e){}}
+        if(scores){
+          scoreSection.style.display='block';
+          const labels={asento:'Asento',kierto:'Kierto',paino:'Painonsiirto',follow_through:'Follow-through'};
+          scoreBars.innerHTML=Object.entries(scores).map(([k,v])=>`<div class="score-row"><div class="score-name">${labels[k]||k}</div><div class="score-bar-bg"><div class="score-bar-fill" style="width:0%" data-target="${v*10}%"></div></div><div class="score-val">${v}/10</div></div>`).join('');
+          setTimeout(()=>scoreBars.querySelectorAll('.score-bar-fill').forEach(b=>b.style.width=b.dataset.target),100);
+        }else{scoreSection.style.display='none';}
+        resultBody.innerHTML=markdownToHtml(cleanText);
+        resultSub.textContent=proPlayer?`${playerName} — Vertailu: ${proPlayer}`:`${playerName} — ${uploadedFiles.length} kuvan analyysi`;
+        loadingState.classList.remove('visible');result.classList.add('visible');
+        result.scrollIntoView({behavior:'smooth',block:'start'});
+      }catch(err){
+        loadingState.classList.remove('visible');
+        ['upload-card','pro-card','prgr-card','analyze-section','name-card'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='';});
+        document.getElementById('instructionsToggle').style.display='';
+        errorBox.textContent=`Virhe: ${err.message}`;errorBox.classList.add('visible');
+      }
+    });
+
+    resetBtn.addEventListener('click',()=>{
+      uploadedFiles=[];
+      analyzeBtn.disabled=true;result.classList.remove('visible');scoreSection.style.display='none';
+      errorBox.classList.remove('visible');
+      ['upload-card','pro-card','prgr-card','analyze-section','name-card'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='';});
+      document.getElementById('instructionsToggle').style.display='';
+      document.getElementById('instructionsBody').classList.remove('open');
+      document.getElementById('instructionsArrow').classList.remove('open');
+      resetVideoInput();
+      window.scrollTo({top:0,behavior:'smooth'});
+    });
+
+    // Copy
+    document.getElementById('copyBtn').addEventListener('click',()=>{
+      const btn=document.getElementById('copyBtn');
+      let text='';
+      if(scoreSection.style.display!=='none'){
+        text+='=== PISTEET ===\n';
+        document.querySelectorAll('.score-row').forEach(row=>{text+=row.querySelector('.score-name').textContent+': '+row.querySelector('.score-val').textContent+'\n';});
+        text+='\n';
+      }
+      text+='=== ANALYYSI ===\n'+document.getElementById('resultBody').innerText;
+      navigator.clipboard.writeText(text).then(()=>{btn.textContent='Kopioitu!';setTimeout(()=>{btn.innerHTML='&#x1F4CB; Kopioi analyysi';},2000);});
+    });
+
+    // PDF
+    document.getElementById('pdfBtn').addEventListener('click',async()=>{
+      const btn=document.getElementById('pdfBtn');
+      btn.textContent='Luodaan PDF...';btn.disabled=true;
+      try{
+        const {jsPDF}=window.jspdf;
+        const resultCard=document.getElementById('result');
+        const buttons=resultCard.querySelectorAll('button');
+        buttons.forEach(b=>b.style.visibility='hidden');
+        const canvas=await html2canvas(resultCard,{scale:2,useCORS:true,backgroundColor:'#dff0d5',logging:false});
+        buttons.forEach(b=>b.style.visibility='');
+        const pdf=new jsPDF({orientation:'portrait',unit:'px',format:'a4'});
+        const pageW=pdf.internal.pageSize.getWidth(),pageH=pdf.internal.pageSize.getHeight(),margin=20,contentW=pageW-margin*2;
+        const imgH=(canvas.height*contentW)/canvas.width;
+        const totalPages=Math.ceil(imgH/(pageH-margin*2));
+        const sliceH=Math.floor(canvas.height/totalPages);
+        for(let i=0;i<totalPages;i++){
+          if(i>0)pdf.addPage();
+          const srcY=i*sliceH,srcHeight=i===totalPages-1?canvas.height-srcY:sliceH;
+          const sc=document.createElement('canvas');sc.width=canvas.width;sc.height=srcHeight;
+          sc.getContext('2d').drawImage(canvas,0,srcY,canvas.width,srcHeight,0,0,canvas.width,srcHeight);
+          pdf.addImage(sc.toDataURL('image/png'),'PNG',margin,margin,contentW,(srcHeight*contentW)/canvas.width);
+        }
+        pdf.save('swing-analyysi.pdf');
+        btn.innerHTML='&#x1F4C4; Lataa PDF';btn.disabled=false;
+      }catch(err){btn.innerHTML='&#x1F4C4; Lataa PDF';btn.disabled=false;}
+    });
+
+    function markdownToHtml(md){return md.replace(/```[\s\S]*?```/g,'').replace(/#+\s*(Kokonaisarvio|Pisteet)[^\n]*/gi,'').replace(/### (.*)/g,'<h3>$1</h3>').replace(/## (.*)/g,'<h3>$1</h3>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/^\s*[-*] (.*)/gm,'<li>$1</li>').replace(/(<li>[\s\S]*?<\/li>(\s*<li>[\s\S]*?<\/li>)*)/g,'<ul>$1</ul>').replace(/\n{2,}/g,'</p><p>').replace(/^(?!<[hul])(.+)$/gm,m=>m.startsWith('<')?m:`<p>${m}</p>`).replace(/<p><\/p>/g,'');}
+  </script>
+</body>
+</html>
